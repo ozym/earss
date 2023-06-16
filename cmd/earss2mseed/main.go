@@ -81,6 +81,9 @@ func main() {
 
 		var counter int
 		for _, record := range records {
+			if !(record.Instrument > 0) {
+				continue
+			}
 			for channel := 0; channel < record.NumberOfChannels; channel++ {
 				var samples []int32
 				for i := 0; i < earss.DataValues; i += record.NumberOfChannels {
@@ -93,7 +96,7 @@ func main() {
 				copy(rec.LocationIdentifier[:], []byte(settings.location))
 				copy(rec.ChannelIdentifier[:], []byte(settings.Channel(channel)))
 				rec.TimeCorrection = int32(100 * record.TimeCorrection)
-				if err := rec.PackSteim2(start, 0, samples, func(msr *ms.Record) error {
+				if err := rec.PackInt32(start, samples, func(msr *ms.Record) error {
 					copy(msr.SequenceNumber[:], []byte(fmt.Sprintf("%06d", counter+1)))
 					counter++
 					return msr.Encode(os.Stdout)

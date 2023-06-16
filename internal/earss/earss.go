@@ -68,6 +68,27 @@ func (r Record) String() string {
 	return sb.String()
 }
 
+func (r Record) Header() string {
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("%-23s", r.StartTime.Format(time.RFC3339Nano)))
+	sb.WriteString(fmt.Sprintf(" %4d", r.Instrument))
+	sb.WriteString(fmt.Sprintf(" %3d", r.TapeNumber))
+	sb.WriteString(fmt.Sprintf(" %2d", r.PreEventSeconds))
+	sb.WriteString(fmt.Sprintf(" %1d", r.NumberOfChannels))
+	sb.WriteString(fmt.Sprintf(" %1d", r.BufferType))
+	sb.WriteString(fmt.Sprintf(" %3d", r.BufferNumber))
+	sb.WriteString(fmt.Sprintf(" %1s", func() string {
+		if r.LastTrigger {
+			return "T"
+		}
+		return "F"
+	}()))
+	sb.WriteString(fmt.Sprintf(" %3d", r.SampleRate))
+	sb.WriteString(fmt.Sprintf(" %3d", r.TimeCorrection))
+	sb.WriteString(fmt.Sprintf(" %1d %1d %1d", r.Gain[0], r.Gain[1], r.Gain[2]))
+	return sb.String()
+}
+
 func (r *Record) Decode(data []byte) error {
 	if len(data) != BufferLength {
 		return fmt.Errorf("invalid length")
@@ -104,7 +125,7 @@ func (r *Record) Decode(data []byte) error {
 	r.Gain[1] = int((header[2]&128)/128 + (header[3]&3)*2)
 	r.Gain[2] = int((header[3] & 28) / 4)
 
-	r.TimeCorrection = int(binary.LittleEndian.Uint16(header[8:10]))
+	r.TimeCorrection = int(int16(binary.LittleEndian.Uint16(header[8:10])))
 
 	for i := 0; i < DataValues; i += r.NumberOfChannels {
 		for j := 0; j < r.NumberOfChannels; j++ {
